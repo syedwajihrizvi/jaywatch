@@ -1,2 +1,2 @@
 # jaywatch
-# CREATOR: SYED WAJIH RIZVI
+# Creator: Syed Wajih Rizvi
