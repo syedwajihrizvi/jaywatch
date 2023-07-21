@@ -7,6 +7,7 @@ import datetime
 
 class Company(models.Model):
     name = models.CharField(max_length=30)
+    symbol = models.CharField(max_length=30)
 
     def __str__(self) -> str:
         return self.name

@@ -19,10 +19,18 @@ class InvestmentSerializer(serializers.ModelSerializer):
 
 
 class InvestmentInPorfolioSerializer(serializers.ModelSerializer):
+    company_name = serializers.SerializerMethodField('get_company_name')
+    company_symbol = serializers.SerializerMethodField('get_company_symbol')
 
     class Meta:
         model = Investment
-        fields = ['company', 'shares']
+        fields = ['company', 'company_name', 'company_symbol', 'shares']
+
+    def get_company_name(self, investment):
+        return investment.company.name
+
+    def get_company_symbol(self, investment):
+        return investment.company.symbol
 
 
 class CreatePortfolioSerializer(serializers.ModelSerializer):
@@ -42,10 +50,11 @@ class PortfolioSerializer(serializers.ModelSerializer):
 
 class CompanySerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=30)
+    symbol = serializers.CharField(max_length=30)
 
     class Meta:
         model = Company
-        fields = ["name"]
+        fields = ["name", "symbol"]
 
 
 class CustomerSerializer(serializers.ModelSerializer):

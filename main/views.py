@@ -33,7 +33,7 @@ from .models import (
     Customer
 )
 
-from .tasks import scrape_data
+from .tasks import portfolio_analysis
 
 
 class InvestmentViewSet(ModelViewSet):
@@ -69,7 +69,7 @@ class PortfolioViewSet(CreateModelMixin,
     def analyse(self, request, pk):
         portfolio = Portfolio.objects.get(id=pk)
         serializer = PortfolioSerializer(portfolio)
-        scrape_data.delay(serializer.data)
+        portfolio_analysis.delay(serializer.data)
         print("Found")
         return Response(serializer.data)
 
