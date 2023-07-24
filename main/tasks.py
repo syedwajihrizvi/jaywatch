@@ -2,6 +2,7 @@ from time import sleep
 from celery import shared_task
 
 from .analysis.yahoo_finance.algo.company import Company
+from .analysis.yahoo_finance.algo.portfolio import Portfolio
 
 
 @shared_task
@@ -18,5 +19,7 @@ def portfolio_analysis(portfolio):
         company.get_cash_flow()
         company.get_earnings()
         company.get_recommendations()
+
+    portfolio = Portfolio(companies)
 
     print("Finished Analysis for all companies in Portfolio")
