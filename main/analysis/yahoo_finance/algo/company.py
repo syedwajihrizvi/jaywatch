@@ -7,6 +7,8 @@ from ..app import (get_analysis as api_get_analysis,
                    get_earnings as api_get_earnings,
                    get_recommendations as api_get_recommendations)
 
+from ...scrape import get_competitors as scrape_competitors
+
 
 class Company:
     def __init__(self, name, symbol):
@@ -14,11 +16,19 @@ class Company:
         self.symbol = symbol
 
     def get_competitors(self):
-        pass
+        self.competitors = scrape_competitors(self.name, self.symbol,
+                                              self.sector, self.industry_disp,
+                                              self.desc)
 
     def get_summary(self):
         f = open(f"{self.name}.txt", 'a')
         response = api_get_summary(self.symbol)
+
+        # Extract data from response
+        summary_profile = response.get("summaryProfile")
+        self.industry_disp = summary_profile.get("industryDisp")
+        self.sector = summary_profile.get("sector")
+        self.desc = summary_profile.get("longBusinessSummary")
         f.write(json.dumps(response))
         f.write('\n')
         f.close()

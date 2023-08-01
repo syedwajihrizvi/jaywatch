@@ -18,7 +18,6 @@ def get_summary(symbol):
 
     response = requests.get(
         SUMMARY_URL, headers=headers, params=querystring)
-
     return response.json()
 
 

@@ -20,6 +20,9 @@ def portfolio_analysis(portfolio):
         company.get_earnings()
         company.get_recommendations()
 
+    for company in companies:
+        company.get_competitors()
+
     portfolio = Portfolio(companies)
 
     print("Finished Analysis for all companies in Portfolio")
