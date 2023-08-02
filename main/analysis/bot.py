@@ -1,6 +1,7 @@
 import os
 import openai
 from .api_key import api_key
+from .util import get_list_from_numbered_list as format_answer
 
 CLASSIFY_INDUSTRY = "Based on the following description of the company, what specific industry would you classify the company in?"
 
@@ -30,7 +31,12 @@ def ask_industry(name, desc):
     cresponse = GetMessageMemory(
         f"Can you give me the industris in a numbered list?", messages)
     messages.append({"role": "assistant", "content": cresponse})
+
     print(f"Response: {cresponse}")
+
+    res_industries = format_answer(cresponse)
+
+    print(res_industries)
 
 
 def GetMessageMemory(NewQuestion, lastmessage):
