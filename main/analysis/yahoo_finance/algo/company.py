@@ -8,6 +8,7 @@ from ..app import (get_analysis as api_get_analysis,
                    get_recommendations as api_get_recommendations)
 
 from ...scrape import get_competitors as scrape_competitors
+from ...scrape import get_latest_headlines as scrape_headlines
 
 
 class Company:
@@ -19,6 +20,9 @@ class Company:
         self.competitors = scrape_competitors(self.name, self.symbol,
                                               self.sector, self.industry_disp,
                                               self.desc)
+
+    def get_latest_headlines(self):
+        self.headlines = scrape_headlines(self.company)
 
     def get_summary(self):
         f = open(f"{self.name}.txt", 'a')

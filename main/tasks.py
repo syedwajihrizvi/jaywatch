@@ -22,7 +22,8 @@ def portfolio_analysis(portfolio):
 
     for company in companies:
         company.get_competitors()
+        company.get_latest_headlines()
 
-    portfolio = Portfolio(companies)
+    # portfolio = Portfolio(companies)
 
     print("Finished Analysis for all companies in Portfolio")

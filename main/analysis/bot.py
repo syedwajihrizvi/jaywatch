@@ -1,21 +1,15 @@
-import os
 import openai
-from .api_key import api_key
-from .util import get_list_from_numbered_list as format_answer
-
-CLASSIFY_INDUSTRY = "Based on the following description of the company, what specific industry would you classify the company in?"
+# import api_key
+from .api_key import key, key1
+from .util import get_list_from_numbered_list
+# import util
+import json
+import requests
 
 
 def ask_industry(name, desc):
 
-    openai.api_key = api_key
-
-    f = open(f"{name}-bot.txt", "w")
-    f.write(name)
-    f.write("\n")
-
-    f.write(desc)
-    f.write("\n")
+    openai.api_key = key
 
     question = f"Use this text to answer my question: {desc}"
 
@@ -34,9 +28,9 @@ def ask_industry(name, desc):
 
     print(f"Response: {cresponse}")
 
-    res_industries = format_answer(cresponse)
+    res_industries = get_list_from_numbered_list(cresponse)
 
-    print(res_industries)
+    return res_industries
 
 
 def GetMessageMemory(NewQuestion, lastmessage):

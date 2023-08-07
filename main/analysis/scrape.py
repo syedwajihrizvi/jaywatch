@@ -19,18 +19,37 @@ driver = webdriver.Chrome(
 
 def get_competitors(name, symbol, api_sector, api_disp, desc):
     # Ask Chat GPT to get the specific sector from the company desc
-    print(f"CALLED FOR {name}")
-    smart_industry = ask_industry(name, desc)
+    smart_industries = ask_industry(name, desc)
+
     # Google search on that sector and collect company names
+    base_url = "https://www.google.com/search?q=top+consumer+"
+    res = []
+    for industry in smart_industries:
+        competitors = []
+        url = base_url+industry.replace(" ", "+")+"+companies"
+        driver.get(url)
 
-    # driver.get(
-    #     "https://www.google.com/search?q=top+consumer+retail+companies&client")
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, "html5lib")
 
-    # page_source = driver.page_source
+        divs = soup.find_all('div', class_="B0jnne")
+        for div in divs:
+            competitors.append(div.text)
+            print(competitors)
+        res[industry] = competitors
+    return res
 
-    # soup = BeautifulSoup(page_source, "html5lib")
-    # divs = soup.find_all('div', class_="yuRUbf")
-    # for div in divs:
-    #     print(div.find('h3').text)
 
-    # print(soup.prettify())
+def get_latest_headlines(name):
+    url = "https://www.google.com/search?q=" + name + "&tbm=nws"
+    driver.get(url)
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, "html5lib")
+
+    headlines = soup.find_all('div', class_="n0jPhd ynAwRc MBeuO nDgy9d")
+    res = []
+    for headline in headlines:
+        print(headline.text)
+        res.append(headline.text)
+
+    return res
