@@ -26,7 +26,8 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
     res = []
     for industry in smart_industries:
         competitors = []
-        url = base_url+industry.replace(" ", "+")+"+companies"
+        url = base_url + \
+            industry.lower().replace("industry", "").replace(" ", "+")+"+companies"
         driver.get(url)
 
         page_source = driver.page_source
@@ -35,8 +36,7 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
         divs = soup.find_all('div', class_="B0jnne")
         for div in divs:
             competitors.append(div.text)
-            print(competitors)
-        res[industry] = competitors
+        res.append({industry: competitors})
     return res
 
 
@@ -49,7 +49,6 @@ def get_latest_headlines(name):
     headlines = soup.find_all('div', class_="n0jPhd ynAwRc MBeuO nDgy9d")
     res = []
     for headline in headlines:
-        print(headline.text)
         res.append(headline.text)
 
     return res

@@ -20,9 +20,22 @@ class Company:
         self.competitors = scrape_competitors(self.name, self.symbol,
                                               self.sector, self.industry_disp,
                                               self.desc)
+        f = open(f"{self.name}_competitors.txt", 'a')
+        print(self.competitors)
+        for comp in self.competitors:
+            for key, val in comp.items():
+                f.write(key+'\n')
+                for v in val:
+                    f.write(v + " ")
+                f.write('\n')
+            f.write('\n')
+        f.close()
 
     def get_latest_headlines(self):
-        self.headlines = scrape_headlines(self.company)
+        self.headlines = scrape_headlines(self.name)
+        f = open(f"{self.name}_headlines.txt", 'a')
+        for head in self.headlines:
+            f.write(head + '\n')
 
     def get_summary(self):
         f = open(f"{self.name}.txt", 'a')
