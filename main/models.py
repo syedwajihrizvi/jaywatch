@@ -1,9 +1,6 @@
 from django.db import models
 from django.conf import settings
 
-import datetime
-# Create your models here.
-
 
 class Company(models.Model):
     name = models.CharField(max_length=30)
@@ -33,3 +30,5 @@ class Investment(models.Model):
     portfolio = models.ForeignKey(
         Portfolio, on_delete=models.CASCADE, related_name="investments")
     shares = models.BigIntegerField()
+    date_purchased = models.DateTimeField(null=True)
+    price_purchased = models.DecimalField(max_digits=6, decimal_places=2)

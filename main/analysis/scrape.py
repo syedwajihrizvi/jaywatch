@@ -4,8 +4,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
-# from .bot import ask_industry
-import bot
+from .bot import ask_industry
+# import bot
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-blink-features')
@@ -21,7 +21,7 @@ driver = webdriver.Chrome(
 
 def get_competitors(name, symbol, api_sector, api_disp, desc):
     # Ask Chat GPT to get the specific sector from the company desc
-    smart_industries = bot.ask_industry(name, desc)
+    smart_industries = ask_industry(name, desc)
 
     # Google search on that sector and collect company names
     base_url = "https://www.google.com/search?q=top+consumer+"
@@ -61,7 +61,3 @@ def get_latest_headlines(name):
     for headline in headlines:
         res.append(headline.text)
     return res
-
-
-res = get_latest_headlines("palantir")
-print(res)
