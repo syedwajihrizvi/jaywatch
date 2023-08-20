@@ -1,15 +1,15 @@
 import openai
-# import api_key
-from .api_key import key, key1
-from .util import get_list_from_numbered_list
-# import util
+import api_key
+# from .api_key import key, key1
+# from .util import get_list_from_numbered_list
+import util
 import json
 import requests
 
 
 def ask_industry(name, desc):
 
-    openai.api_key = key
+    openai.api_key = api_key.key
 
     question = f"Use this text to answer my question: {desc}"
 
@@ -28,7 +28,7 @@ def ask_industry(name, desc):
 
     print(f"Response: {cresponse}")
 
-    res_industries = get_list_from_numbered_list(cresponse)
+    res_industries = util.get_list_from_numbered_list(cresponse)
 
     return res_industries
 

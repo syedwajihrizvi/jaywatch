@@ -1,9 +1,11 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
-from .bot import ask_industry
+# from .bot import ask_industry
+import bot
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-blink-features')
@@ -19,7 +21,7 @@ driver = webdriver.Chrome(
 
 def get_competitors(name, symbol, api_sector, api_disp, desc):
     # Ask Chat GPT to get the specific sector from the company desc
-    smart_industries = ask_industry(name, desc)
+    smart_industries = bot.ask_industry(name, desc)
 
     # Google search on that sector and collect company names
     base_url = "https://www.google.com/search?q=top+consumer+"
@@ -51,4 +53,15 @@ def get_latest_headlines(name):
     for headline in headlines:
         res.append(headline.text)
 
+    page_2 = driver.find_element("css selector", '[aria-label="Page 2"]')
+    driver.execute_script("arguments[0].click();", page_2)
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, "html5lib")
+    headlines = soup.find_all('div', class_="n0jPhd ynAwRc MBeuO nDgy9d")
+    for headline in headlines:
+        res.append(headline.text)
     return res
+
+
+res = get_latest_headlines("palantir")
+print(res)
