@@ -1,8 +1,8 @@
 from time import sleep
 from celery import shared_task
 
-from .analysis.yahoo_finance.algo.company import Company
-from .analysis.yahoo_finance.algo.portfolio import Portfolio
+from .analysis.company import Company
+from .analysis.portfolio import Portfolio
 
 
 @shared_task
@@ -20,9 +20,9 @@ def portfolio_analysis(portfolio):
         company.get_earnings()
         company.get_recommendations()
 
-    for company in companies:
-        company.get_competitors()
-        company.get_latest_headlines()
+    # for company in companies:
+    #     company.get_competitors()
+    #     company.get_latest_headlines()
 
     # portfolio = Portfolio(companies)
 

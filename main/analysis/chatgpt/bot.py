@@ -1,6 +1,6 @@
 import openai
-from api_key import *
-from util import *
+from .gpt_api_key import *
+from ..utils.util import *
 
 
 def ask_industry(name, desc):

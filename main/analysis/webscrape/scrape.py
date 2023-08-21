@@ -4,8 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
-from .bot import ask_industry
-# import bot
+from ..chatgpt.bot import ask_industry
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-blink-features')
