@@ -12,8 +12,7 @@ options.add_argument('headless')
 options.add_argument('--disable-blink-features=AutomationControlled')
 options.add_argument("--enable-javascript")
 
-service = Service(ChromeDriverManager(
-    driver_version="114.0.5735.90").install())
+service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(
     service=service, options=options)
 
