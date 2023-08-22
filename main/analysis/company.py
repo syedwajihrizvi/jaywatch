@@ -153,6 +153,12 @@ class Company:
         f = open(f"{self.name}.txt", 'a')
         f.write("ANALYSIS \n \n \n")
         response = api_get_analysis(self.symbol)
+        print(response.keys())
+        earnings_trend = response.get("earningsTrend").get("trend")
+        earnings = []
+        for earning in earnings_trend:
+            earnings.append([earning.get("period"), earning.get("growth"), earning.get(
+                "earningsEstimate"), earning.get("revenueEstimate")])
         f.write(json.dumps(response))
         f.write('\n \n \n \n')
         f.close()
@@ -191,4 +197,4 @@ class Company:
 
 
 tesla = Company("tesla", "TSLA")
-tesla.get_summary()
+tesla.get_analysis()
