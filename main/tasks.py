@@ -13,15 +13,15 @@ def portfolio_analysis(portfolio):
                  for investment in portfolio["investments"]]
 
     for company in companies:
-        #     company.get_summary()
-        #     company.get_analysis()
-        #     company.get_balance_sheet()
-        #     company.get_cash_flow()
-        #     company.get_earnings()
-        #     company.get_recommendations()
+        company.get_summary()
+        company.get_analysis()
+        company.get_balance_sheet()
+        company.get_cash_flow()
+        company.get_earnings()
+        company.get_recommendations()
 
-        # for company in companies:
-        #     company.get_competitors()
+    for company in companies:
+        company.get_competitors()
         company.get_latest_headlines()
 
     portfolio = Portfolio(companies)
