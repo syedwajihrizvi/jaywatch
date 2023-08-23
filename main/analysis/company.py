@@ -38,7 +38,7 @@ class Company:
             f.write(head + '\n')
 
     def get_summary(self):
-        f = open(f"{self.name}-test.txt", 'a')
+        f = open(f"{self.name}.txt", 'a')
         f.write("SUMMARY \n \n \n")
         response = api_get_summary(self.symbol)
 
@@ -153,7 +153,6 @@ class Company:
         f = open(f"{self.name}.txt", 'a')
         f.write("ANALYSIS \n \n \n")
         response = api_get_analysis(self.symbol)
-        print(response.keys())
         earnings_trend = response.get("earningsTrend").get("trend")
         earnings = []
         for earning in earnings_trend:
@@ -167,6 +166,57 @@ class Company:
         f = open(f"{self.name}.txt", 'a')
         f.write("BALANCE SHEET \n \n \n")
         response = api_get_balance_sheet(self.symbol)
+        cash_flow_history = response.get("cashflowStatementHistory")
+        cash_flows = []
+        for cash_flow in cash_flow_history.get("cashflowStatements"):
+            cash_flows.append([cash_flow.get("investments"),
+                               cash_flow.get("changeToLiabilities"),
+                               cash_flow.get("netBorrowings"),
+                               cash_flow.get(
+                                   "totalCashFromInvestingActivities"),
+                               cash_flow.get(
+                                   "totalCashFromFinancingActivities"),
+                               cash_flow.get(
+                                   "totalCashFromOperatingActivities"),
+                               cash_flow.get("changeInCash"),
+                               cash_flow.get("changeToInventory"),
+                               cash_flow.get("changeToNetincome"),
+                               cash_flow.get("capitalExpenditures"),
+                               cash_flow.get("endDate")])
+
+        balance_sheet_history = response.get("balanceSheetHistoryQuarterly")
+        statements = []
+        for statement in balance_sheet_history.get("balanceSheetStatements"):
+            statements.append([statement.get("intangibleAssets"),
+                               statement.get("capitalSurplus"),
+                               statement.get("totalLiab"),
+                               statement.get("otherCurrentLiab"),
+                               statement.get("endDate"),
+                               statement.get("otherCurrentAssets"),
+                               statement.get("retainedEarnings"),
+                               statement.get("treasuryStock"),
+                               statement.get("otherAssets"),
+                               statement.get("cash"),
+                               statement.get("totalCurrentLiabilities"),
+                               statement.get("shortLongTermDebt"),
+                               statement.get("totalCurrentAssets"),
+                               statement.get("shortTermInvestments"),
+                               statement.get("longTermDebt")
+                               ])
+
+        income_statement_history = response.get(
+            "incomeStatementHistoryQuarterly")
+        income_statements = []
+        for statement in income_statement_history.get("incomeStatementHistory"):
+            income_statements.append([statement.get("researchDevelopment"),
+                                      statement.get("incomeBeforeTax"),
+                                      statement.get("netIncome"),
+                                      statement.get("grossProfit"),
+                                      statement.get("operatingIncome"),
+                                      statement.get("otherOperatingExpenses"),
+                                      statement.get("totalRevenue"),
+                                      statement.get("endDate")
+                                      ])
         f.write(json.dumps(response))
         f.write('\n \n \n \n ')
         f.close()
@@ -194,7 +244,3 @@ class Company:
         f.write(json.dumps(response))
         f.write('\n \n \n \n')
         f.close()
-
-
-tesla = Company("tesla", "TSLA")
-tesla.get_analysis()
