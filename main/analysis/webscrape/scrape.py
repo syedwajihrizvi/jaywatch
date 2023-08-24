@@ -4,7 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
-from ..chatgpt.bot import ask_industry
+from ..chatgpt.bot import ask_industry, classify_headlines
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-blink-features')
@@ -88,4 +88,5 @@ def get_latest_headlines(name):
         headlines = soup.find_all('div', class_="n0jPhd ynAwRc MBeuO nDgy9d")
         for headline in headlines:
             res.append(headline.text)
+    classify_headlines(res, name)
     return res
