@@ -36,9 +36,12 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
 
         divs = soup.find_all('div', class_="B0jnne")
         for div in divs:
-            competitors.append(div.text)
+            competitor = div.text.lower()
+            useless_part = competitor.find("ceo")
+            competitor = competitor[:useless_part] if useless_part > - \
+                1 else competitor
+            competitors.append(competitor)
         industry_companies[industry] = competitors
-        res.append({industry: competitors})
 
     base_url = "https://www.google.com/search?q=top+"
     for industry in smart_industries:
@@ -47,12 +50,16 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
                 industry.lower().replace("industry", "").replace(" ", "+")+"+companies"
             driver.get(url)
             page_source = driver.page_source
-        soup = BeautifulSoup(page_source, "html5lib")
+            soup = BeautifulSoup(page_source, "html5lib")
 
-        divs = soup.find_all('div', class_="B0jnne")
-        for div in divs:
-            competitors.append(div.text)
-        industry_companies[industry] = competitors
+            divs = soup.find_all('div', class_="B0jnne")
+            for div in divs:
+                competitor = div.text.lower()
+                useless_part = competitor.find("ceo")
+                competitor = competitor[:useless_part] if useless_part > - \
+                    1 else competitor
+                competitors.append(competitor)
+            industry_companies[industry] = competitors
 
     for industry, competitors in industry_companies.items():
         res.append({industry: competitors})

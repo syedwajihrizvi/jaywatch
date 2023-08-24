@@ -43,7 +43,7 @@ class Company:
 
         # Extract data from response
         summary_profile = response.get("summaryProfile")
-        self.industry_disp = self.summary_profile.get("industryDisp")
+        self.industry_disp = summary_profile.get("industryDisp")
         self.sector = summary_profile.get("sector")
         self.desc = summary_profile.get("longBusinessSummary")
 
