@@ -10,6 +10,8 @@ from .yahoo_finance.api_requests import (get_analysis as api_get_analysis,
 from .webscrape.scrape import (get_competitors as scrape_competitors,
                                get_latest_headlines as scrape_headlines)
 
+from .utils import get_value_from_object
+
 
 class Company:
     def __init__(self, name, symbol):
@@ -48,102 +50,168 @@ class Company:
         self.desc = summary_profile.get("longBusinessSummary")
 
         # Get values
-        self.market_cap = response.get("marketCap")
-        default_key_stats = response.get("defaultKeyStatistics")
-        self.profit_margins = default_key_stats.get("profitMargins")
-        self.delta_52_week = default_key_stats.get("52WeekChange")
-        self.delta_sp_52_week = default_key_stats.get("SandP52WeekChange")
-        self.shares_outstanding = default_key_stats.get("sharesOutstanding")
-        self.shares_short = default_key_stats.get("sharesShort")
-        self.shares_float = default_key_stats.get("floatShares")
-        self.shares_short_priot = default_key_stats.get(
-            "sharesShortPriorMonth")
-        self.percent_owned_by_institutions = default_key_stats.get(
-            "heldPercentInstitutions")
-        self.percent_owned_by_insiders = default_key_stats.get(
-            "heldPercentInsiders")
-        self.price_to_book = default_key_stats.get("priceToBook")
-        self.beta = default_key_stats.get("beta")
-        self.enterprise_value = default_key_stats.get("enterpriseValue")
-        self.earnings_quarterly_growth = default_key_stats.get(
-            "earningsQuarterlyGrowth")
+        self.market_cap = get_value_from_object(response, "marketCap", "raw")
+        default_key_stats = response.get("defaultKeyStatistics").get("raw")
+        self.profit_margins = get_value_from_object(
+            default_key_stats, "profitMargins", "raw")
+        self.delta_52_week = get_value_from_object(
+            default_key_stats, "52WeekChange", "raw")
+        self.delta_sp_52_week = get_value_from_object(
+            default_key_stats, "SandP52WeekChange", "raw")
+        self.shares_outstanding = get_value_from_object(
+            "sharesOutstanding", "raw")
+        self.shares_short = get_value_from_object(
+            default_key_stats, "sharesShort", "raw")
+        self.shares_float = get_value_from_object(
+            default_key_stats, "floatShares", "raw")
+        self.shares_short_priot = get_value_from_object(
+            default_key_stats, "sharesShortPriorMonth", "raw")
+        self.percent_owned_by_institutions = get_value_from_object(
+            default_key_stats, "heldPercentInstitutions", "raw")
+        self.percent_owned_by_insiders = get_value_from_object(
+            default_key_stats, "heldPercentInsiders", "raw")
+        self.price_to_book = get_value_from_object(
+            default_key_stats, "priceToBook", "raw")
+        self.beta = get_value_from_object(default_key_stats, "beta", "raw")
+        self.enterprise_value = get_value_from_object(
+            default_key_stats, "enterpriseValue", "raw")
+        self.earnings_quarterly_growth = get_value_from_object(
+            "earningsQuarterlyGrowth", "raw")
         earnings = response.get("earnings")
         self.financial_charts = earnings.get('financialsChart')
         self.yearly_financial_chart = self.financial_charts.get("yearly")
         self.revenue_earnings_by_year = []
         for info in self.yearly_financial_chart:
-            self.revenue_earnings_by_year.append(
-                [info["date"], info["revenue"], info["earnings"]])
+            date = get_value_from_object(info, "date", "raw")
+            revenue = get_value_from_object(info, "revenue", "raw")
+            earning = get_value_from_object(info, "earnings", "raw")
+            self.revenue_earnings_by_year.append([date, revenue, earning])
 
         fund_owners = response.get("fundOwnership")
         self.fund_owner_pct = []
         for fund in fund_owners.get("ownershipList"):
+            reportDate = get_value_from_object(fund, "reportDate", "fmt")
+            organization = fund.get("organization")
+            pctHeld = get_value_from_object(fund, "pctHeld", "raw")
+            value = get_value_from_object(fund, "value", "raw")
+            position = get_value_from_object(fund, "position", "raw")
             self.fund_owner_pct.append(
-                [fund["organization"], fund["pctHeld"], fund["value"]])
+                [reportDate, organization, pctHeld, value, position])
 
         insider_transactions = response.get("insiderTransactions")
         self.insider_transactions_info = []
         for transaction in insider_transactions.get("transactions"):
-            self.insider_transactions_info.append([transaction.get("filerName"),
-                                                   transaction.get(
-                                                  "transactionText"),
-                transaction.get("value"),
-                transaction.get("shares"),
+            startDate = get_value_from_object(transaction, "startDate", "fmt")
+            shares = get_value_from_object(transaction, "shares", "raw")
+            transaction_value = get_value_from_object(
+                transaction, "value", "raw")
+            self.insider_transactions_info.append([
+                transaction.get("filerName"),
+                transaction.get("transactionText"),
+                transaction_value,
+                shares,
                 transaction.get("filerRelation"),
-                transaction.get("startDate")])
+                startDate])
 
         key_financial_data = response.get("financialData")
-        self.ebidta = key_financial_data.get("ebitda")
-        self.ebidta_margins = key_financial_data.get("ebitdaMargins")
-        self.gross_margins = key_financial_data.get("grossMargins")
-        self.operating_cash_flow = key_financial_data.get("operatingCashflow")
-        self.revenue_growth = key_financial_data.get("revenueGrowth")
-        self.operating_margins = key_financial_data.get("operatingMargins")
-        self.gross_profits = key_financial_data.get("grossProfits")
-        self.free_cash_flow = key_financial_data.get("freeCashflow")
-        self.target_median_price = key_financial_data.get("targetMedianPrice")
-        self.target_mean_price = key_financial_data.get("targetMeanPrice")
-        self.earnings_growth = key_financial_data.get("earningsGrowth")
-        self.current_ratio = key_financial_data.get("currentRatio")
-        self.return_on_assets = key_financial_data.get("returnOnAssets")
-        self.return_on_equity = key_financial_data.get("returnOnEquity")
-        self.debt_to_equity = key_financial_data.get("debtToEquity")
-        self.total_cash = key_financial_data.get("totalCash")
-        self.total_debt = key_financial_data.get("totalDebt")
-        self.total_revenue = key_financial_data.get("totalRevenue")
-        self.total_cash_per_share = key_financial_data.get("totalCashPerShare")
-        self.revenue_per_share = key_financial_data.get("revenuePerShare")
-        self.quick_ratio = key_financial_data.get("quickRatio")
+        self.ebidta = get_value_from_object(
+            key_financial_data, "ebitda", "raw")
+        self.ebidta_margins = get_value_from_object(
+            key_financial_data, "ebitdaMargins", "raw")
+        self.gross_margins = get_value_from_object(
+            key_financial_data, "grossMargins", "raw")
+        self.operating_cash_flow = get_value_from_object(
+            key_financial_data, "operatingCashFlow", "raw")
+        self.revenue_growth = get_value_from_object(
+            key_financial_data, "revenueGrowth", "raw")
+        self.operating_margins = get_value_from_object(
+            key_financial_data, "operatingMargins", "raw")
+        self.gross_profits = get_value_from_object(
+            key_financial_data, "grossProfits", "raw")
+        self.free_cash_flow = get_value_from_object(
+            key_financial_data, "freeCashFlow", "raw")
+        self.target_median_price = get_value_from_object(
+            key_financial_data, "targetMedianPrice", "raw")
+        self.target_mean_price = get_value_from_object(
+            key_financial_data, "targetMeanPrice", "raw")
+        self.earningsGrowth = get_value_from_object(
+            key_financial_data, "earningsGrowth", "raw")
+        self.current_ratio = get_value_from_object(
+            key_financial_data, "currentRatio", "raw")
+        self.return_on_assets = get_value_from_object(
+            key_financial_data, "returnOnAssets", "raw")
+        self.return_on_equity = get_value_from_object(
+            key_financial_data, "returnOnEquity", "raw")
+        self.debt_to_equity = get_value_from_object(
+            key_financial_data, "debtToEquity", "raw")
+        self.total_cash = get_value_from_object(
+            key_financial_data, "totalCash", "raw")
+        self.total_debt = get_value_from_object(
+            key_financial_data, "totalDebt", "raw")
+        self.total_revenue = get_value_from_object(
+            key_financial_data, "totalRevenue", "raw")
+        self.total_cash_per_share = get_value_from_object(
+            key_financial_data, "totalCashPerShare", "raw")
+        self.revenue_per_share = get_value_from_object(
+            key_financial_data, "revenuePerShare", "raw")
+        self.quick_ratio = get_value_from_object(
+            key_financial_data, "quickRatio", "raw")
 
         institution_ownsership = response.get("institutionOwnership")
         self.institutions = []
         for institution in institution_ownsership.get("ownershipList"):
-            self.institutions.append([institution.get("organization"),
-                                      institution.get("pctHeld"),
-                                      institution.get("position"),
-                                      institution.get("value"),
-                                      institution.get("pctChange")])
-        self.two_hundred_day_average = response.get("twoHundredDayAverage")
-        self.fifty_day_average = response.get("fiftyDayAverage")
-        self.fifty_two_week_high = response.get("fiftyTwoWeekHigh")
-        self.fifty_two_week_low = response.get("fiftyTwoWeekLow")
+            # pctHeld is raw, position is raw, value is raw, reportDate is fmt, pctChange is raw
+            organization = institution.get("organization")
+            pctHeld = get_value_from_object(institution, "pctHeld", "raw")
+            position = get_value_from_object(institution, "position", "raw")
+            value = get_value_from_object(institution, "value", 'raw')
+            pctChange = get_value_from_object(institution, "pctChange", "raw")
+            reportDate = get_value_from_object(
+                institution, "reportDate", "fmt")
+            self.institutions.append([organization,
+                                      pctHeld,
+                                      position,
+                                      value,
+                                      pctChange,
+                                      reportDate])
+        self.two_hundred_day_average = get_value_from_object(
+            response, "twoHundredDayAverage", "raw")
+        self.fifty_day_average = get_value_from_object(
+            response, "fiftyDayAverage", "raw")
+        self.fifty_two_week_high = get_value_from_object(
+            response, "fiftyTwoWeekHigh", "raw")
+        self.fifty_two_week_low = get_value_from_object(
+            response, "fiftyTwoWeekLow", "raw")
 
         # Check environment existence
         esg_scores = response.get("esgScores")
         self.military_contract = esg_scores.get("militaryContract")
         self.contoversial_weapons = esg_scores.get("controversialWeapons")
-        self.peer_social_performance = esg_scores.get("peerSocialPerformance")
-        self.peer_environment_performance = esg_scores.get(
+        # need min, average, max
+        peer_social_performance = esg_scores.get("peerSocialPerformance")
+        self.peer_social_performance_min = peer_social_performance.get("min")
+        self.peer_social_performance_max = peer_social_performance.get("max")
+        self.peer_social_performance_avg = peer_social_performance.get("avg")
+        # need min, average, max
+        peer_environment_performance = esg_scores.get(
             "peerEnvironmentPerformance")
-        self.governance_score = esg_scores.get("governanceScore")
-        self.total_esg = esg_scores.get("totalEsg")
+        self.peer_social_performance_min = peer_environment_performance.get(
+            "min")
+        self.peer_social_performance_max = peer_environment_performance.get(
+            "max")
+        self.peer_social_performance_avg = peer_environment_performance.get(
+            "avg")
+        # raw
+        self.governance_score = get_value_from_object(
+            esg_scores, "governanceScore", "raw")
+        self.total_esg = get_value_from_object(esg_scores, "totalEsg", "raw")
 
         # Upgrade/Downgrades
         upgrade_downgrade_history = response.get("upgradeDowngradeHistory")
         self.history = []
         for change in upgrade_downgrade_history.get("history")[:100]:
             # Get date after too and only get recent changes to a certain year
-            self.history.append([change.get("firm"), change.get(
+            self.history.append([change.get("epochGradeDate"), change.get("firm"), change.get(
                 "toGrade"), change.get("fromGrade")])
         f.write(json.dumps(response))
         f.write('\n \n \n \n')
@@ -156,8 +224,30 @@ class Company:
         earnings_trend = response.get("earningsTrend").get("trend")
         self.earnings = []
         for earning in earnings_trend:
-            self.earnings.append([earning.get("period"), earning.get("growth"), earning.get(
-                "earningsEstimate"), earning.get("revenueEstimate")])
+            earnings_estimate = earning.get("earningsEstimate")
+            earnings_estimate_avg = get_value_from_object(
+                earnings_estimate, "avg", "raw")
+            earnings_estimate_min = get_value_from_object(
+                earnings_estimate, "min", "raw")
+            earnings_estimate_max = get_value_from_object(
+                earnings_estimate, "max", "raw")
+            revenue_estimate = earning.get("revenueEstimate")
+            revenue_estimate_avg = get_value_from_object(
+                revenue_estimate, "avg", "raw")
+            revenue_estimate_min = get_value_from_object(
+                revenue_estimate, "min", "raw")
+            revenue_estimate_max = get_value_from_object(
+                revenue_estimate, "max", "raw")
+            growth = get_value_from_object(earning, "growth", "raw")
+            self.earnings.append([earning.get("endDate"),
+                                  earning.get("period"),
+                                  growth,
+                                  earnings_estimate_avg,
+                                  earnings_estimate_min,
+                                  earnings_estimate_max,
+                                  revenue_estimate_avg,
+                                  revenue_estimate_min,
+                                  revenue_estimate_max])
         f.write(json.dumps(response))
         f.write('\n \n \n \n')
         f.close()
@@ -169,54 +259,112 @@ class Company:
         cash_flow_history = response.get("cashflowStatementHistory")
         self.cash_flows = []
         for cash_flow in cash_flow_history.get("cashflowStatements"):
-            self.cash_flows.append([cash_flow.get("investments"),
-                                    cash_flow.get("changeToLiabilities"),
-                                    cash_flow.get("netBorrowings"),
-                                    cash_flow.get(
-                                   "totalCashFromInvestingActivities"),
-                cash_flow.get(
-                "totalCashFromFinancingActivities"),
-                cash_flow.get(
-                "totalCashFromOperatingActivities"),
-                cash_flow.get("changeInCash"),
-                cash_flow.get("changeToInventory"),
-                cash_flow.get("changeToNetincome"),
-                cash_flow.get("capitalExpenditures"),
-                cash_flow.get("endDate")])
+            investments = get_value_from_object(
+                cash_flow, "investments", "raw")
+            change_to_liabilities = get_value_from_object(
+                cash_flow, "changeToLiabilities", "raw")
+            net_borrowings = get_value_from_object(
+                cash_flow, "netBorrowings", "raw")
+            total_cash_from_investing_activities = get_value_from_object(
+                cash_flow, "totalCashFromInvestingActivities", "raw")
+            total_cash_from_financing_activities = get_value_from_object(
+                cash_flow, "totalCashFromFinancingActivities", "raw")
+            total_cash_from_operating_activities = get_value_from_object(
+                cash_flow, "totalCashFromOperatingActivities", "raw")
+            change_in_cash = get_value_from_object(
+                cash_flow, "changeInCash", "raw")
+            change_to_inventory = get_value_from_object(
+                cash_flow, "changeToInventory", "raw")
+            change_to_net_income = get_value_from_object(
+                cash_flow, "changeToNetincome", "raw")
+            capital_expenditures = get_value_from_object(
+                cash_flow, "capitalExpenditures", "raw")
+            end_date = get_value_from_object(cash_flow, "endDate", "raw")
+            self.cash_flows.append([investments,
+                                    change_to_liabilities,
+                                    net_borrowings,
+                                    total_cash_from_investing_activities,
+                                    total_cash_from_financing_activities,
+                                    total_cash_from_operating_activities,
+                                    change_in_cash,
+                                    change_to_inventory,
+                                    change_to_net_income,
+                                    capital_expenditures,
+                                    end_date])
 
         balance_sheet_history = response.get("balanceSheetHistoryQuarterly")
         self.statements = []
         for statement in balance_sheet_history.get("balanceSheetStatements"):
-            self.statements.append([statement.get("intangibleAssets"),
-                                    statement.get("capitalSurplus"),
-                                    statement.get("totalLiab"),
-                                    statement.get("otherCurrentLiab"),
-                                    statement.get("endDate"),
-                                    statement.get("otherCurrentAssets"),
-                                    statement.get("retainedEarnings"),
-                                    statement.get("treasuryStock"),
-                                    statement.get("otherAssets"),
-                                    statement.get("cash"),
-                                    statement.get("totalCurrentLiabilities"),
-                                    statement.get("shortLongTermDebt"),
-                                    statement.get("totalCurrentAssets"),
-                                    statement.get("shortTermInvestments"),
-                                    statement.get("longTermDebt")
+            intangible_assets = get_value_from_object(
+                statement, "intangibleAssets", "raw")
+            capital_surplus = get_value_from_object(
+                statement, "capitalSurplus", "raw")
+            total_liab = get_value_from_object(statement, "totalLiab", "raw")
+            other_current_liab = get_value_from_object(
+                statement, "otherCurrentLiab", "raw")
+            end_date = get_value_from_object(statement, "endDate", "raw")
+            other_current_assets = get_value_from_object(
+                statement, "otherCurrentAssets", "raw")
+            retained_earnings = get_value_from_object(
+                statement, "retainedEarnings", "raw")
+            treasury_stock = get_value_from_object(
+                statement, "treasuryStock", "raw")
+            other_assets = get_value_from_object(
+                statement, "otherAssets", "raw")
+            cash = get_value_from_object(statement, "cash", "raw")
+            total_current_liabilities = get_value_from_object(
+                statement, "totalCurrentLiabilities", "raw")
+            short_long_term_debt = get_value_from_object(
+                statement, "shortLongTermDebt", "raw")
+            total_current_assets = get_value_from_object(
+                statement, "totalCurrentAssets", "raw")
+            short_term_investments = get_value_from_object(
+                statement, "shortTermInvestments", "raw")
+            long_term_debt = get_value_from_object(
+                statement, "longTermDebt", "raw")
+            self.statements.append([intangible_assets,
+                                    capital_surplus,
+                                    total_liab,
+                                    other_current_liab,
+                                    end_date,
+                                    other_current_assets,
+                                    retained_earnings,
+                                    treasury_stock,
+                                    other_assets,
+                                    cash,
+                                    total_current_liabilities,
+                                    short_long_term_debt,
+                                    total_current_assets,
+                                    short_term_investments,
+                                    long_term_debt
                                     ])
 
         income_statement_history = response.get(
             "incomeStatementHistoryQuarterly")
         self.income_statements = []
         for statement in income_statement_history.get("incomeStatementHistory"):
-            self.income_statements.append([statement.get("researchDevelopment"),
-                                           statement.get("incomeBeforeTax"),
-                                           statement.get("netIncome"),
-                                           statement.get("grossProfit"),
-                                           statement.get("operatingIncome"),
-                                           statement.get(
-                                               "otherOperatingExpenses"),
-                                           statement.get("totalRevenue"),
-                                           statement.get("endDate")
+            r_and_d = get_value_from_object(
+                statement, "researchDevelopment", "raw")
+            income_before_tax = get_value_from_object(
+                statement, "incomeBeforeTax", "raw")
+            net_income = get_value_from_object(statement, "netIncome", "raw")
+            gross_profit = get_value_from_object(
+                statement, "grossProfit", "raw")
+            operating_income = get_value_from_object(
+                statement, "operatingIncome", "raw"),
+            other_operating_expenses = get_value_from_object(
+                statement, "otherOperatingExpenses", "raw")
+            total_revenue = get_value_from_object(
+                statement, "totalRevenue", "raw")
+            end_date = get_value_from_object(statement, "endDate", "fmt")
+            self.income_statements.append([r_and_d,
+                                           income_before_tax,
+                                           net_income,
+                                           gross_profit,
+                                           operating_income,
+                                           other_operating_expenses,
+                                           total_revenue,
+                                           end_date
                                            ])
         f.write(json.dumps(response))
         f.write('\n \n \n \n ')

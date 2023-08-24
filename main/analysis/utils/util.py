@@ -15,3 +15,8 @@ def get_list_from_numbered_list(numbered_list):
         i += 1
     print(res)
     return res
+
+
+def get_value_from_object(object, key, type):
+    v = object.get("key")
+    return v.get(type) if v else v
