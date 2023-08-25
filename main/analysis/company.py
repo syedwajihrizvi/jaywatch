@@ -10,7 +10,7 @@ from .yahoo_finance.api_requests import (get_analysis as api_get_analysis,
 from .webscrape.scrape import (get_competitors as scrape_competitors,
                                get_latest_headlines as scrape_headlines)
 
-from .utils import get_value_from_object
+from .utils.util import get_value_from_object
 
 
 class Company:
@@ -51,7 +51,7 @@ class Company:
 
         # Get values
         self.market_cap = get_value_from_object(response, "marketCap", "raw")
-        default_key_stats = response.get("defaultKeyStatistics").get("raw")
+        default_key_stats = response.get("defaultKeyStatistics")
         self.profit_margins = get_value_from_object(
             default_key_stats, "profitMargins", "raw")
         self.delta_52_week = get_value_from_object(
@@ -59,7 +59,7 @@ class Company:
         self.delta_sp_52_week = get_value_from_object(
             default_key_stats, "SandP52WeekChange", "raw")
         self.shares_outstanding = get_value_from_object(
-            "sharesOutstanding", "raw")
+            default_key_stats, "sharesOutstanding", "raw")
         self.shares_short = get_value_from_object(
             default_key_stats, "sharesShort", "raw")
         self.shares_float = get_value_from_object(
@@ -76,7 +76,7 @@ class Company:
         self.enterprise_value = get_value_from_object(
             default_key_stats, "enterpriseValue", "raw")
         self.earnings_quarterly_growth = get_value_from_object(
-            "earningsQuarterlyGrowth", "raw")
+            default_key_stats, "earningsQuarterlyGrowth", "raw")
         earnings = response.get("earnings")
         self.financial_charts = earnings.get('financialsChart')
         self.yearly_financial_chart = self.financial_charts.get("yearly")
@@ -188,19 +188,11 @@ class Company:
         self.military_contract = esg_scores.get("militaryContract")
         self.contoversial_weapons = esg_scores.get("controversialWeapons")
         # need min, average, max
-        peer_social_performance = esg_scores.get("peerSocialPerformance")
-        self.peer_social_performance_min = peer_social_performance.get("min")
-        self.peer_social_performance_max = peer_social_performance.get("max")
-        self.peer_social_performance_avg = peer_social_performance.get("avg")
+        self.peer_social_performance = esg_scores.get("peerSocialPerformance")
+
         # need min, average, max
-        peer_environment_performance = esg_scores.get(
+        self.peer_environment_performance = esg_scores.get(
             "peerEnvironmentPerformance")
-        self.peer_social_performance_min = peer_environment_performance.get(
-            "min")
-        self.peer_social_performance_max = peer_environment_performance.get(
-            "max")
-        self.peer_social_performance_avg = peer_environment_performance.get(
-            "avg")
         # raw
         self.governance_score = get_value_from_object(
             esg_scores, "governanceScore", "raw")
