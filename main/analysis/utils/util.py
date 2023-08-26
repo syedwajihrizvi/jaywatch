@@ -18,5 +18,9 @@ def get_list_from_numbered_list(numbered_list):
 
 
 def get_value_from_object(object, key, type):
-    v = object.get("key")
+    v = object.get(key)
     return v.get(type) if v else v
+
+
+def percentage_difference(x, y):
+    return ((x-y)/y)*100

@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 from .yahoo_finance.api_requests import (get_analysis as api_get_analysis,
                                          get_summary as api_get_summary,
@@ -10,7 +11,12 @@ from .yahoo_finance.api_requests import (get_analysis as api_get_analysis,
 from .webscrape.scrape import (get_competitors as scrape_competitors,
                                get_latest_headlines as scrape_headlines)
 
-from .utils.util import get_value_from_object
+from .utils.util import get_value_from_object, percentage_difference
+
+LARGE_CAP = 10000000000
+MID_CAP = 2000000000
+SMALL_CAP = 300000000
+NANO_CAP = 50000000
 
 
 class Company:
@@ -50,7 +56,8 @@ class Company:
         self.desc = summary_profile.get("longBusinessSummary")
 
         # Get values
-        self.market_cap = get_value_from_object(response, "marketCap", "raw")
+        price = response.get("price")
+        self.market_cap = get_value_from_object(price, "marketCap", "raw")
         default_key_stats = response.get("defaultKeyStatistics")
         self.profit_margins = get_value_from_object(
             default_key_stats, "profitMargins", "raw")
@@ -62,10 +69,13 @@ class Company:
             default_key_stats, "sharesOutstanding", "raw")
         self.shares_short = get_value_from_object(
             default_key_stats, "sharesShort", "raw")
+        self.shares_short_prior_month = get_value_from_object(
+            default_key_stats, "sharesShortPriorMonth", "raw")
         self.shares_float = get_value_from_object(
             default_key_stats, "floatShares", "raw")
-        self.shares_short_priot = get_value_from_object(
+        self.shares_short_prior = get_value_from_object(
             default_key_stats, "sharesShortPriorMonth", "raw")
+        self.institution_count = get_value_from_object()
         self.percent_owned_by_institutions = get_value_from_object(
             default_key_stats, "heldPercentInstitutions", "raw")
         self.percent_owned_by_insiders = get_value_from_object(
@@ -77,12 +87,14 @@ class Company:
             default_key_stats, "enterpriseValue", "raw")
         self.earnings_quarterly_growth = get_value_from_object(
             default_key_stats, "earningsQuarterlyGrowth", "raw")
+        self.peg_ratio = get_value_from_object(
+            default_key_stats, "pegRatio", "raw")
         earnings = response.get("earnings")
         self.financial_charts = earnings.get('financialsChart')
         self.yearly_financial_chart = self.financial_charts.get("yearly")
         self.revenue_earnings_by_year = []
         for info in self.yearly_financial_chart:
-            date = get_value_from_object(info, "date", "raw")
+            date = info.get("date")
             revenue = get_value_from_object(info, "revenue", "raw")
             earning = get_value_from_object(info, "earnings", "raw")
             self.revenue_earnings_by_year.append([date, revenue, earning])
@@ -96,7 +108,7 @@ class Company:
             value = get_value_from_object(fund, "value", "raw")
             position = get_value_from_object(fund, "position", "raw")
             self.fund_owner_pct.append(
-                [reportDate, organization, pctHeld, value, position])
+                (reportDate, organization, pctHeld, value, position))
 
         insider_transactions = response.get("insiderTransactions")
         self.insider_transactions_info = []
@@ -157,7 +169,11 @@ class Company:
         self.quick_ratio = get_value_from_object(
             key_financial_data, "quickRatio", "raw")
 
+        major_holders = response.get("majorHoldersBreakdown")
+
         institution_ownsership = response.get("institutionOwnership")
+        self.num_institutions = get_value_from_object(
+            major_holders, "institutionsCount", "institutionsCount")
         self.institutions = []
         for institution in institution_ownsership.get("ownershipList"):
             # pctHeld is raw, position is raw, value is raw, reportDate is fmt, pctChange is raw
@@ -385,3 +401,98 @@ class Company:
         f.write(json.dumps(response))
         f.write('\n \n \n \n')
         f.close()
+
+    def size_classification(self):
+        if self.market_cap > LARGE_CAP:
+            self.company_size = "large_cap"
+        elif MID_CAP <= self.market_cap <= LARGE_CAP:
+            self.company_size = "mid_cap"
+        elif SMALL_CAP <= self.market_cap < MID_CAP:
+            self.company_size = "small_cap"
+        else:
+            self.company_size = "nano_cap"
+
+    def analyze_delta(self):
+        diff = percentage_difference(self.delta_52_week, self.delta_sp_52_week)
+        res = ""
+        if diff > 0:
+            res += "positive"
+        elif diff < 0:
+            res += "negative"
+        else:
+            res += "none"
+
+        if abs(percentage_difference) > 50:
+            res += "large"
+        elif 20 < abs(percentage_difference) <= 50:
+            res += "medium"
+        else:
+            res += "low"
+
+        self.correlation_with_s_p = res
+
+    def analyze_short(self):
+        change_in_short = percentage_difference(
+            self.shares_short_prior_month, self.shares_short)
+        if -30 <= change_in_short <= -10:
+            self.change_in_short = "increased bearish"
+        elif change_in_short < -30:
+            self.change_in_short = "large bearish sentiment"
+        elif 10 > change_in_short > 30:
+            self.change_in_short = "bullish sentiment"
+        else:
+            self.change_in_short = "large bullish sentiment"
+
+    def analyse_institution_ownership(self):
+        if self.percent_owned_by_institutions > 0.5:
+            self.analyze_institution = "high"
+        elif 0.2 <= self.percent_owned_by_institutions <= 0.5:
+            self.analyze_institution = "medium"
+        else:
+            self.analyze_institution = "low"
+
+    def analyze_insider_ownership(self):
+        if self.percent_owned_by_institutions > 0.5:
+            self.analyze_institution = "high"
+        elif 0.2 <= self.percent_owned_by_institutions <= 0.5:
+            self.analyze_institution = "medium"
+        else:
+            self.analyze_institution = "low"
+
+    def analyze_beta(self):
+        if self.beta > 1:
+            self.beta_analysis = "volatile"
+        elif self.beta == 1:
+            self.beta_analysis = "inline"
+        elif self.beta < 1:
+            self.beta_analysis = "not volatile"
+        elif self.beta == 0:
+            self.beta_analysis = "not associated"
+        else:
+            self.beta = "opposite"
+
+    def analyze_peg_ratio(self):
+        if self.peg_ratio < 1:
+            self.peg_value = "undervalued"
+        elif self.peg_ratio == 1:
+            self.peg_value = "inline"
+        else:
+            self.peg_value = "overvalued"
+
+    def analyze_yearly_financials(self):
+        self.numerical_diff = []
+        self.percent_diff = []
+        financial_years = len(self.revenue_earnings_by_year)
+        for i in range(financial_years-1):
+            y1 = np.array(financial_years[i])
+            y2 = np.array(financial_years[i+1])
+
+            self.numerical_diff.append(((y2-y1)/y1))
+            self.percent_diff.append(((y2-y1)/y1) * 100)
+
+    def analyze_fund_owners(self):
+        def sorter(x): return (x[3], x[2], x[4], x[0], x[1])
+        sorted_fund_ownership = sorted(
+            self.fund_owner_pct, sorter, reverse=True)
+
+        top_10_funds = sorted_fund_ownership[:11]
