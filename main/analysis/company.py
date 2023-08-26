@@ -9,10 +9,12 @@ from .yahoo_finance.api_requests import (get_analysis as api_get_analysis,
                                          get_recommendations as api_get_recommendations)
 
 from .webscrape.scrape import (get_competitors as scrape_competitors,
-                               get_latest_headlines as scrape_headlines)
+                               get_latest_headlines as scrape_headlines,
+                               get_fund_ticker_symbol as scrape_ticker_symbol)
 
 from .utils.util import get_value_from_object, percentage_difference
 
+from .fund import Fund
 LARGE_CAP = 10000000000
 MID_CAP = 2000000000
 SMALL_CAP = 300000000
@@ -75,7 +77,8 @@ class Company:
             default_key_stats, "floatShares", "raw")
         self.shares_short_prior = get_value_from_object(
             default_key_stats, "sharesShortPriorMonth", "raw")
-        self.institution_count = get_value_from_object()
+        self.institution_count = get_value_from_object(
+            default_key_stats, "institutionsCount", "raw")
         self.percent_owned_by_institutions = get_value_from_object(
             default_key_stats, "heldPercentInstitutions", "raw")
         self.percent_owned_by_insiders = get_value_from_object(
@@ -221,6 +224,9 @@ class Company:
             # Get date after too and only get recent changes to a certain year
             self.history.append([change.get("epochGradeDate"), change.get("firm"), change.get(
                 "toGrade"), change.get("fromGrade")])
+
+        term_trends = response.get("pageViews")
+
         f.write(json.dumps(response))
         f.write('\n \n \n \n')
         f.close()
@@ -493,6 +499,10 @@ class Company:
     def analyze_fund_owners(self):
         def sorter(x): return (x[3], x[2], x[4], x[0], x[1])
         sorted_fund_ownership = sorted(
-            self.fund_owner_pct, sorter, reverse=True)
+            self.fund_owner_pct, key=sorter, reverse=True)
 
-        top_10_funds = sorted_fund_ownership[:11]
+        top_10_funds = sorted_fund_ownership[:3]
+        funds = [(scrape_ticker_symbol(fund[1]), fund[1], fund[2],
+                  fund[3], fund[4]) for fund in top_10_funds]
+        funds = [(Fund(fund[0]), fund[1], fund[2], fund[3], fund[4])
+                 for fund in funds]

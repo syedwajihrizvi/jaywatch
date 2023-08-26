@@ -8,17 +8,18 @@ from .analysis.portfolio import Portfolio
 @shared_task
 def portfolio_analysis(portfolio):
     # Go through companies in portfolio
-    print(portfolio)
     companies = [Company(investment["company_name"], investment["company_symbol"])
                  for investment in portfolio["investments"]]
 
     for company in companies:
         company.get_summary()
+        company.analyze_fund_owners()
         company.get_analysis()
         company.get_balance_sheet()
         company.get_cash_flow()
         company.get_earnings()
         company.get_recommendations()
+        company.size_classification()
 
     for company in companies:
         company.get_competitors()

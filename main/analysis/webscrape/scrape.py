@@ -4,7 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
-from ..chatgpt.bot import ask_industry, classify_headlines
+from ..chatgpt.bot import ask_industry, classify_headlines, get_ticker_symbol
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-blink-features')
@@ -90,3 +90,34 @@ def get_latest_headlines(name):
             res.append(headline.text)
     classify_headlines(res, name)
     return res
+
+
+def get_fund_ticker_symbol(name):
+    # Option A
+    url_a = f"https://www.google.com/search?q=ticker+symbol+for+{name.replace(' ', '+')}"
+    driver.get(url_a)
+    page_source_a = driver.page_source
+    soup_a = BeautifulSoup(page_source_a, "html5lib")
+    fund_name_section_a = soup_a.find('div', class_="hHq9Z")
+
+    # Option B
+    url_b = f"https://www.google.com/search?q={name.replace(' ', '+')}+ticker+symbol"
+    driver.get(url_b)
+    page_source_b = driver.page_source
+    soup_b = BeautifulSoup(page_source_b, "html5lib")
+    fund_name_section_b = soup_b.find('div', {"data-attrid": "Ticker Symbol"})
+
+    if fund_name_section_a:
+        fund_name_text = fund_name_section_a.find(
+            'div', class_="iAIpCb PZPZlf").find('span', recursive=False).text
+        colon_index = fund_name_text.index(':')
+        fund_name = fund_name_text[colon_index+1:].replace(" ", "")
+        return fund_name
+    elif fund_name_section_b:
+        fund_name_section_b = soup_b.find(
+            'div', {"data-attrid": "Ticker Symbol"})
+        fund_name = fund_name_section_b.find('span', class_="WuDkNe").text
+        return fund_name
+    else:
+        fund_name = get_ticker_symbol(name)
+        return fund_name.replace(" ", "")

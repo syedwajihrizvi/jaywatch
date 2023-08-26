@@ -52,3 +52,14 @@ def classify_headlines(headlines, company):
         res = "positive" if "positive" in classification.lower() else "negative"
         headlines_classification[headline] = res
     return headlines_classification
+
+
+def get_ticker_symbol(etf):
+    openai.api_key = key
+    question = f"What is the ticker symbol for {etf}? Only give me the answer"
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": question}]
+    )
+    answer = response.choices[0].message.content
+    return answer.replace(" ", "")
