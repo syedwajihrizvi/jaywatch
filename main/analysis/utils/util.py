@@ -24,3 +24,19 @@ def get_value_from_object(object, key, type):
 
 def percentage_difference(x, y):
     return ((x-y)/y)*100
+
+
+def percentage_change(a1):
+    return [percentage_difference(x, y) for x, y in list(zip(a1, a1[1:]))]
+
+
+def get_year(date):
+    return int(date[:4])
+
+
+def get_month(date):
+    return int(date[5:7])
+
+
+def get_day(date):
+    return int(date[8:])

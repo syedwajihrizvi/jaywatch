@@ -15,6 +15,12 @@ from .webscrape.scrape import (get_competitors as scrape_competitors,
 from .utils.util import get_value_from_object, percentage_difference
 
 from .fund import Fund
+from .transaction import Transaction
+from .insider_transaction import InsiderTransactions
+from .epoch_grade import EpochGrade
+from .period import Period
+
+
 LARGE_CAP = 10000000000
 MID_CAP = 2000000000
 SMALL_CAP = 300000000
@@ -30,25 +36,11 @@ class Company:
         self.competitors = scrape_competitors(self.name, self.symbol,
                                               self.sector, self.industry_disp,
                                               self.desc)
-        f = open(f"{self.name}_competitors.txt", 'a')
-        for comp in self.competitors:
-            for key, val in comp.items():
-                f.write(key+'\n')
-                for v in val:
-                    f.write(v + " ")
-                f.write('\n')
-            f.write('\n')
-        f.close()
 
     def get_latest_headlines(self):
         self.headlines = scrape_headlines(self.name)
-        f = open(f"{self.name}_headlines.txt", 'a')
-        for head in self.headlines:
-            f.write(head + '\n')
 
     def get_summary(self):
-        f = open(f"{self.name}.txt", 'a')
-        f.write("SUMMARY \n \n \n")
         response = api_get_summary(self.symbol)
 
         # Extract data from response
@@ -128,6 +120,24 @@ class Company:
                 transaction.get("filerRelation"),
                 startDate])
 
+        insider_holders = response.get("insiderHolders")
+        self.insider_holders_info = []
+        for insider_holder in insider_holders.get("holders"):
+            name = insider_holder.get("name")
+            relation = insider_holder.get("relation")
+            transaction_type = insider_holder.get("transactionDescription")
+            latest_trans_date = insider_holder.get("latestTransDate")
+            stock_position = get_value_from_object(
+                insider_holder, "positionDirect", "raw")
+            if not stock_position:
+                stock_position = get_value_from_object(
+                    insider_holder, "positionInDirect", "raw")
+            self.insider_holders_info.append((name,
+                                              relation,
+                                              transaction_type,
+                                              latest_trans_date,
+                                              stock_position))
+
         key_financial_data = response.get("financialData")
         self.ebidta = get_value_from_object(
             key_financial_data, "ebitda", "raw")
@@ -171,6 +181,8 @@ class Company:
             key_financial_data, "revenuePerShare", "raw")
         self.quick_ratio = get_value_from_object(
             key_financial_data, "quickRatio", "raw")
+        self.current_price = get_value_from_object(
+            key_financial_data, "currentPrice", "raw")
 
         major_holders = response.get("majorHoldersBreakdown")
 
@@ -219,21 +231,15 @@ class Company:
 
         # Upgrade/Downgrades
         upgrade_downgrade_history = response.get("upgradeDowngradeHistory")
-        self.history = []
+        self.grade_history = []
         for change in upgrade_downgrade_history.get("history")[:100]:
             # Get date after too and only get recent changes to a certain year
-            self.history.append([change.get("epochGradeDate"), change.get("firm"), change.get(
+            self.grade_history.append([change.get("epochGradeDate"), change.get("firm"), change.get(
                 "toGrade"), change.get("fromGrade")])
 
-        term_trends = response.get("pageViews")
-
-        f.write(json.dumps(response))
-        f.write('\n \n \n \n')
-        f.close()
+        self.term_trends = response.get("pageViews")
 
     def get_analysis(self):
-        f = open(f"{self.name}.txt", 'a')
-        f.write("ANALYSIS \n \n \n")
         response = api_get_analysis(self.symbol)
         earnings_trend = response.get("earningsTrend").get("trend")
         self.earnings = []
@@ -241,34 +247,29 @@ class Company:
             earnings_estimate = earning.get("earningsEstimate")
             earnings_estimate_avg = get_value_from_object(
                 earnings_estimate, "avg", "raw")
-            earnings_estimate_min = get_value_from_object(
-                earnings_estimate, "min", "raw")
-            earnings_estimate_max = get_value_from_object(
-                earnings_estimate, "max", "raw")
+            eps_year_ago = get_value_from_object(earning, "yearAgoEps", "raw")
+
             revenue_estimate = earning.get("revenueEstimate")
             revenue_estimate_avg = get_value_from_object(
                 revenue_estimate, "avg", "raw")
-            revenue_estimate_min = get_value_from_object(
-                revenue_estimate, "min", "raw")
-            revenue_estimate_max = get_value_from_object(
-                revenue_estimate, "max", "raw")
-            growth = get_value_from_object(earning, "growth", "raw")
+            rev_year_ago = get_value_from_object(
+                revenue_estimate, "yearAgoRevenue", "raw")
+            revenue_growth = get_value_from_object(
+                revenue_estimate, "growth", "raw")
+            eps_trends = earning.get("epsTrend")
+            for key in eps_trends.keys():
+                eps_trends[key] = get_value_from_object(eps_trends, key, "raw")
+
             self.earnings.append([earning.get("endDate"),
                                   earning.get("period"),
-                                  growth,
                                   earnings_estimate_avg,
-                                  earnings_estimate_min,
-                                  earnings_estimate_max,
+                                  eps_year_ago,
+                                  eps_trends,
                                   revenue_estimate_avg,
-                                  revenue_estimate_min,
-                                  revenue_estimate_max])
-        f.write(json.dumps(response))
-        f.write('\n \n \n \n')
-        f.close()
+                                  rev_year_ago,
+                                  revenue_growth])
 
     def get_balance_sheet(self):
-        f = open(f"{self.name}.txt", 'a')
-        f.write("BALANCE SHEET \n \n \n")
         response = api_get_balance_sheet(self.symbol)
         cash_flow_history = response.get("cashflowStatementHistory")
         self.cash_flows = []
@@ -380,33 +381,15 @@ class Company:
                                            total_revenue,
                                            end_date
                                            ])
-        f.write(json.dumps(response))
-        f.write('\n \n \n \n ')
-        f.close()
 
     def get_cash_flow(self):
-        f = open(f"{self.name}.txt", 'a')
-        f.write("CASH FLOW \n \n \n")
         response = api_get_cash_flow(self.symbol)
-        f.write(json.dumps(response))
-        f.write('\n \n \n \n')
-        f.close()
 
     def get_earnings(self):
-        f = open(f"{self.name}.txt", 'a')
-        f.write("GET EARNINGS \n \n \n")
         response = api_get_earnings(self.symbol)
-        f.write(json.dumps(response))
-        f.write('\n \n \n \n')
-        f.close()
 
     def get_recommendations(self):
-        f = open(f"{self.name}.txt", 'a')
-        f.write("RECOMMENDATIONS \n \n \n")
         response = api_get_recommendations(self.symbol)
-        f.write(json.dumps(response))
-        f.write('\n \n \n \n')
-        f.close()
 
     def size_classification(self):
         if self.market_cap > LARGE_CAP:
@@ -506,3 +489,107 @@ class Company:
                   fund[3], fund[4]) for fund in top_10_funds]
         funds = [(Fund(fund[0]), fund[1], fund[2], fund[3], fund[4])
                  for fund in funds]
+
+    def analyze_insider_trading(self):
+        insider_holders = {}
+
+        for insider_holder in self.insider_holders_info:
+            name = insider_holder[0]
+            position = insider_holder[4]
+            last_transaction = insider_holder[2]
+            last_trans_date = insider_holder[3]
+            insider_holders[name] = {
+                "position": position,
+                "last_transaction": Transaction.parse_transaction_type(last_transaction),
+                "last_trans_date": last_trans_date
+            }
+
+        transactions = {}
+        for transaction in self.insider_transactions_info:
+            filer_name = transaction[0]
+            transaction_type = Transaction.parse_transaction_type(
+                transaction[1])
+            value = transaction[2]
+            shares = transaction[3]
+            date = transaction[5]
+
+            new_transaction = Transaction(
+                value, shares, date, transaction_type)
+            insider_transaction = transactions.get(filer_name)
+            if insider_transaction:
+                insider_transaction.add_transaction(new_transaction)
+            else:
+                transactions[filer_name] = InsiderTransactions(
+                    filer_name,
+                    get_value_from_object(
+                        insider_holders, filer_name, "position"),
+                    get_value_from_object(
+                        insider_holders, filer_name, "last_transaction"),
+                    get_value_from_object(
+                        insider_holders, filer_name, "last_trans_date")
+                )
+
+        for insider_holder in transactions.values():
+            insider_holder.analyze_transactions()
+
+    def analyze_averages(self):
+        diff_200_day = percentage_difference(
+            self.current_price, self.delta_200)
+        diff_50_day = percentage_difference(self.current_price, self.delta_50)
+
+        if diff_200_day > 0:
+            longterm_trend = "bullish"
+        else:
+            longterm_trend = "bearish"
+
+        if diff_50_day > 0:
+            shortterm_trend = "bullish"
+        else:
+            shortterm_trend = "bearish"
+
+        self.based_on_avg = f"longterm {longterm_trend}, shortterm {shortterm_trend}"
+
+        if abs(self.fifty_two_week_high - self.current_price) < abs(self.fifty_two_week_low - self.current_price):
+            self.closer_to = "high"
+        else:
+            self.closer_to = "low"
+
+    def analyze_epoch(self):
+
+        epoch_grades = [EpochGrade(grade[1], grade[0], grade[3], grade[2])
+                        for grade in self.grade_history]
+
+        epoch_grades.sort()
+
+        grade_categories = {}
+
+        for epoch_grade in epoch_grades:
+            current_grade = epoch_grade.to_grade
+            grade_group = grade_categories.get(current_grade)
+            if grade_group:
+                grade_group.append(epoch_grade)
+            else:
+                grade_categories[current_grade] = [epoch_grade]
+
+        for epoch_grade, epoch_group in grade_categories.items():
+            from_grade_groups = {}
+            for epoch in epoch_group:
+                from_grade = from_grade_groups.get(epoch.from_grade)
+                if from_grade:
+                    from_grade.append(epoch)
+                else:
+                    if not epoch.from_grade:
+                        from_grade_groups["No Grade"] = [epoch]
+                    else:
+                        from_grade_groups[epoch.from_grade] = [epoch]
+
+            grade_categories[epoch_grade] = from_grade_groups
+
+    def analyze_earnings(self):
+
+        periods = [Period(period[0], period[1],
+                          period[2], period[3],
+                          period[5], period[6],
+                          period[7], period[4]) for period in self.earnings]
+
+        periods.sort()
