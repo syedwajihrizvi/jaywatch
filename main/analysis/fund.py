@@ -21,9 +21,9 @@ class Fund:
 
         fund_performance = response.get('fundPerformance')
         trailing_returns = fund_performance.get('trailingReturns')
-        self.threeMonth = get_value_from_object(
+        self.three_month = get_value_from_object(
             trailing_returns, 'threeMonth', 'raw')
-        self.oneYear = get_value_from_object(
+        self.one_year = get_value_from_object(
             trailing_returns, 'oneYear', 'raw')
         self.ytd = get_value_from_object(trailing_returns, 'ytd', 'raw')
         self.three_year = get_value_from_object(
@@ -31,4 +31,5 @@ class Fund:
         self.five_year = get_value_from_object(
             trailing_returns, 'fiveYear', 'raw')
 
-        print(f"Finished Getting Data for {self.symbol}")
+    def __str__(self):
+        return f"{self.total_assets}"

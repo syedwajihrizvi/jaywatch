@@ -1,4 +1,3 @@
-import json
 import numpy as np
 
 from .yahoo_finance.api_requests import (get_analysis as api_get_analysis,
@@ -12,14 +11,16 @@ from .webscrape.scrape import (get_competitors as scrape_competitors,
                                get_latest_headlines as scrape_headlines,
                                get_fund_ticker_symbol as scrape_ticker_symbol)
 
-from .utils.util import get_value_from_object, percentage_difference
+from .utils.util import get_value_from_object, percentage_difference, percentage_change
 
 from .fund import Fund
 from .transaction import Transaction
 from .insider_transaction import InsiderTransactions
 from .epoch_grade import EpochGrade
 from .period import Period
-
+from .cash_flow import CashFlow
+from .balance_sheet import BalanceSheet
+from .income_statement import IncomeStatement
 
 LARGE_CAP = 10000000000
 MID_CAP = 2000000000
@@ -295,17 +296,13 @@ class Company:
             capital_expenditures = get_value_from_object(
                 cash_flow, "capitalExpenditures", "raw")
             end_date = get_value_from_object(cash_flow, "endDate", "raw")
-            self.cash_flows.append([investments,
-                                    change_to_liabilities,
-                                    net_borrowings,
-                                    total_cash_from_investing_activities,
-                                    total_cash_from_financing_activities,
-                                    total_cash_from_operating_activities,
-                                    change_in_cash,
-                                    change_to_inventory,
-                                    change_to_net_income,
-                                    capital_expenditures,
-                                    end_date])
+            self.cash_flows.append(CashFlow(investments, change_to_liabilities,
+                                            net_borrowings, total_cash_from_investing_activities,
+                                            total_cash_from_financing_activities,
+                                            total_cash_from_operating_activities,
+                                            change_in_cash, change_to_inventory,
+                                            change_to_net_income, capital_expenditures,
+                                            end_date))
 
         balance_sheet_history = response.get("balanceSheetHistoryQuarterly")
         self.statements = []
@@ -337,22 +334,14 @@ class Company:
                 statement, "shortTermInvestments", "raw")
             long_term_debt = get_value_from_object(
                 statement, "longTermDebt", "raw")
-            self.statements.append([intangible_assets,
-                                    capital_surplus,
-                                    total_liab,
-                                    other_current_liab,
-                                    end_date,
-                                    other_current_assets,
-                                    retained_earnings,
-                                    treasury_stock,
-                                    other_assets,
-                                    cash,
-                                    total_current_liabilities,
-                                    short_long_term_debt,
-                                    total_current_assets,
-                                    short_term_investments,
-                                    long_term_debt
-                                    ])
+            self.statements.append(BalanceSheet(intangible_assets, capital_surplus,
+                                                total_liab, other_current_liab,
+                                                end_date, other_current_assets,
+                                                retained_earnings, treasury_stock,
+                                                other_assets, cash,
+                                                total_current_liabilities, short_long_term_debt,
+                                                total_current_assets, short_term_investments,
+                                                long_term_debt))
 
         income_statement_history = response.get(
             "incomeStatementHistoryQuarterly")
@@ -366,21 +355,21 @@ class Company:
             gross_profit = get_value_from_object(
                 statement, "grossProfit", "raw")
             operating_income = get_value_from_object(
-                statement, "operatingIncome", "raw"),
+                statement, "operatingIncome", "raw")
             other_operating_expenses = get_value_from_object(
                 statement, "otherOperatingExpenses", "raw")
             total_revenue = get_value_from_object(
                 statement, "totalRevenue", "raw")
-            end_date = get_value_from_object(statement, "endDate", "fmt")
-            self.income_statements.append([r_and_d,
-                                           income_before_tax,
-                                           net_income,
-                                           gross_profit,
-                                           operating_income,
-                                           other_operating_expenses,
-                                           total_revenue,
-                                           end_date
-                                           ])
+            end_date = get_value_from_object(statement, "endDate", "raw")
+            self.income_statements.append(IncomeStatement(r_and_d,
+                                                          income_before_tax,
+                                                          net_income,
+                                                          gross_profit,
+                                                          operating_income,
+                                                          other_operating_expenses,
+                                                          total_revenue,
+                                                          end_date
+                                                          ))
 
     def get_cash_flow(self):
         response = api_get_cash_flow(self.symbol)
@@ -402,93 +391,66 @@ class Company:
             self.company_size = "nano_cap"
 
     def analyze_delta(self):
-        diff = percentage_difference(self.delta_52_week, self.delta_sp_52_week)
-        res = ""
-        if diff > 0:
-            res += "positive"
-        elif diff < 0:
-            res += "negative"
-        else:
-            res += "none"
-
-        if abs(percentage_difference) > 50:
-            res += "large"
-        elif 20 < abs(percentage_difference) <= 50:
-            res += "medium"
-        else:
-            res += "low"
-
-        self.correlation_with_s_p = res
+        self.delta_with_sp = percentage_difference(
+            self.delta_52_week, self.delta_sp_52_week)
 
     def analyze_short(self):
         change_in_short = percentage_difference(
             self.shares_short_prior_month, self.shares_short)
-        if -30 <= change_in_short <= -10:
-            self.change_in_short = "increased bearish"
-        elif change_in_short < -30:
-            self.change_in_short = "large bearish sentiment"
-        elif 10 > change_in_short > 30:
-            self.change_in_short = "bullish sentiment"
-        else:
-            self.change_in_short = "large bullish sentiment"
+        self.delta_short_shares = change_in_short
 
     def analyse_institution_ownership(self):
-        if self.percent_owned_by_institutions > 0.5:
-            self.analyze_institution = "high"
-        elif 0.2 <= self.percent_owned_by_institutions <= 0.5:
-            self.analyze_institution = "medium"
-        else:
-            self.analyze_institution = "low"
+        pass
 
     def analyze_insider_ownership(self):
-        if self.percent_owned_by_institutions > 0.5:
-            self.analyze_institution = "high"
-        elif 0.2 <= self.percent_owned_by_institutions <= 0.5:
-            self.analyze_institution = "medium"
-        else:
-            self.analyze_institution = "low"
+        pass
 
     def analyze_beta(self):
-        if self.beta > 1:
-            self.beta_analysis = "volatile"
-        elif self.beta == 1:
-            self.beta_analysis = "inline"
-        elif self.beta < 1:
-            self.beta_analysis = "not volatile"
-        elif self.beta == 0:
-            self.beta_analysis = "not associated"
-        else:
-            self.beta = "opposite"
+        pass
 
     def analyze_peg_ratio(self):
-        if self.peg_ratio < 1:
-            self.peg_value = "undervalued"
-        elif self.peg_ratio == 1:
-            self.peg_value = "inline"
-        else:
-            self.peg_value = "overvalued"
+        pass
 
     def analyze_yearly_financials(self):
-        self.numerical_diff = []
-        self.percent_diff = []
-        financial_years = len(self.revenue_earnings_by_year)
-        for i in range(financial_years-1):
-            y1 = np.array(financial_years[i])
-            y2 = np.array(financial_years[i+1])
+        numerical_diff = []
+        percent_diff = []
+        for i in range(len(self.revenue_earnings_by_year)-1):
+            y1 = np.array(self.revenue_earnings_by_year[i])
+            y2 = np.array(self.revenue_earnings_by_year[i+1])
+            numerical_diff.append((y2-y1))
+            percent_diff.append(((y2-y1)/abs(y1)) * 100)
 
-            self.numerical_diff.append(((y2-y1)/y1))
-            self.percent_diff.append(((y2-y1)/y1) * 100)
+        self.numerical_diff_revenue = [n[1] for n in numerical_diff]
+        self.delta_num_diff_rev = percentage_change(
+            self.numerical_diff_revenue)
+        self.percent_diff_revenue = [p[1] for p in percent_diff]
+        self.delta_per_diff_rev = percentage_change(self.percent_diff_revenue)
+        self.numerical_diff_earning = [n[2] for n in numerical_diff]
+        self.delta_num_diff_earning = percentage_change(
+            self.numerical_diff_earning)
+        self.percent_diff_earnings = [p[2] for p in percent_diff]
+        self.delta_per_diff_ear = percentage_change(self.percent_diff_earnings)
 
     def analyze_fund_owners(self):
         def sorter(x): return (x[3], x[2], x[4], x[0], x[1])
         sorted_fund_ownership = sorted(
             self.fund_owner_pct, key=sorter, reverse=True)
-
-        top_10_funds = sorted_fund_ownership[:3]
+        top_10_funds = sorted_fund_ownership[:5]
         funds = [(scrape_ticker_symbol(fund[1]), fund[1], fund[2],
                   fund[3], fund[4]) for fund in top_10_funds]
-        funds = [(Fund(fund[0]), fund[1], fund[2], fund[3], fund[4])
-                 for fund in funds]
+        self.funds = [(Fund(fund[0]), fund[1], fund[2], fund[3], fund[4])
+                      for fund in funds]
+
+        funds_sorted_by_size = sorted(
+            self.funds, key=lambda fund: fund[0].total_assets, reverse=True)
+        funds_sorted_by_3_month = sorted(
+            self.funds, key=lambda fund: fund[0].three_month, reverse=True)
+        funds_sorted_by_1_year = sorted(
+            self.funds, key=lambda fund: fund[0].one_year, reverse=True)
+        funds_sorted_by_3_year = sorted(
+            self.funds, key=lambda fund: fund[0].three_year, reverse=True)
+        funds_sorted_by_5_year = sorted(
+            self.funds, key=lambda fund: fund[0].five_year, reverse=True)
 
     def analyze_insider_trading(self):
         insider_holders = {}
@@ -593,3 +555,75 @@ class Company:
                           period[7], period[4]) for period in self.earnings]
 
         periods.sort()
+
+    def analyze_cash_flow(self):
+        self.cash_flows.sort()
+        self.delta_investments = percentage_difference(
+            [flow.investments for flow in self.cash_flows if flow.investments])
+        self.delta_delta_liabilities = percentage_change(
+            [flow.change_to_liabilities for flow in self.cash_flows if flow.change_to_liabilities])
+        self.delta_net_borrowings = percentage_change([
+            flow.net_borrowings for flow in self.cash_flows if flow.net_borrowings])
+        self.delta_total_cash_from_investing = percentage_change([
+            flow.total_cash_from_investing_activities for flow in self.cash_flows if flow.total_cash_from_investing_activities])
+        self.delta_total_cash_from_financing = percentage_change([
+            flow.total_cash_from_financing_activities for flow in self.cash_flows if flow.total_cash_from_financing_activities])
+        self.delta_total_cash_from_operating = percentage_change([
+            flow.total_cash_from_operating_activities for flow in self.cash_flows if flow.total_cash_from_operating_activities])
+        self.delta_delta_cash = percentage_change([
+            flow.change_in_cash for flow in self.cash_flows if flow.change_in_cash])
+        self.delta_delta_inventory = percentage_change([
+            flow.change_to_inventory for flow in self.cash_flows if flow.change_to_inventory])
+        self.delta_net_income = percentage_change([
+            flow.change_to_net_income for flow in self.cash_flows if flow.change_to_net_income])
+        self.delta_capital_expenditures = percentage_change([
+            flow.capital_expenditures for flow in self.cash_flows if flow.capital_expenditures])
+
+    def analyze_balance_sheet_statements(self):
+        self.statements.sort()
+        self.delta_intangible_assets = percentage_change([
+            sheet.intangible_assets for sheet in self.statements if sheet.intangible_assets])
+        self.delta_total_liab = percentage_change([
+            sheet.total_liab for sheet in self.statements if sheet.total_liab])
+        self.delta_capital_surplus = percentage_change([
+            sheet.capital_surplus for sheet in self.statements if sheet.capital_surplus])
+        self.delta_other_liab = percentage_change([
+            sheet.other_current_liab for sheet in self.statements if sheet.other_current_liab])
+        self.delta_other_current_assets = percentage_change([
+            sheet.other_current_assets for sheet in self.statements if sheet.other_current_assets])
+        self.delta_retained_earnings = percentage_change([
+            sheet.retained_earnings for sheet in self.statements if sheet.retained_earnings])
+        self.delta_treasury_stock = percentage_change([
+            sheet.treasury_stock for sheet in self.statements if sheet.treasury_stock])
+        self.delta_other_assets = percentage_change([
+            sheet.other_assets for sheet in self.statements if sheet.other_assets])
+        self.delta_cash = percentage_change([
+            sheet.cash for sheet in self.statements if sheet.cash])
+        self.delta_total_current_liab = percentage_change([
+            sheet.total_current_liabilities for sheet in self.statements if sheet.total_current_liabilities])
+        self.delta_short_long_term_debt = percentage_change([
+            sheet.short_long_term_debt for sheet in self.statements if sheet.short_long_term_debt])
+        self.delta_total_current_asset = percentage_change([
+            sheet.total_current_assets for sheet in self.statements if sheet.total_current_assets])
+        self.delta_short_term_investments = percentage_change([
+            sheet.short_term_investments for sheet in self.statements if sheet.short_term_investments])
+        self.delta_long_term_debt = percentage_change([
+            sheet.long_term_debt for sheet in self.statements if sheet.long_term_debt])
+
+    def analyze_income_statements(self):
+        self.income_statements.sort()
+
+        self.delta_r_and_d = percentage_change([
+            state.r_and_d for state in self.income_statements if state.r_and_d])
+        self.delta_income_before_tax = percentage_change([
+            state.income_before_tax for state in self.income_statements if state.income_before_tax])
+        self.delta_net_income = percentage_change([
+            state.net_income for state in self.income_statements if state.net_income])
+        self.delta_gross_profit = percentage_change([
+            state.gross_profit for state in self.income_statements if state.gross_profit])
+        self.delta_operating_income = percentage_change([
+            state.operating_income for state in self.income_statements if state.operating_income])
+        self.delta_other_operating_expenses = percentage_change([
+            state.other_operating_expenses for state in self.income_statements if state.other_operating_expenses])
+        self.delta_total_revenue = percentage_change([
+            state.total_revenue for state in self.income_statements if state.total_revenue])
