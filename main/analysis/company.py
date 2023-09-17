@@ -37,11 +37,9 @@ class Company:
         self.competitors = scrape_competitors(self.name, self.symbol,
                                               self.sector, self.industry_disp,
                                               self.desc)
-        print(self.competitors)
 
     def get_latest_headlines(self):
         self.headlines = scrape_headlines(self.name)
-        print(self.headlines)
 
     def get_summary(self):
         response = api_get_summary(self.symbol)

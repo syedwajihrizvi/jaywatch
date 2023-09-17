@@ -53,7 +53,7 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
             competitor = competitor.replace("nyse:", "")
             company_symbol = find_company_symbol(competitor)
             f.write(f"{competitor}: {company_symbol} \n")
-            competitors.append(company_symbol)
+            competitors.append((competitor, company_symbol))
         industry_companies[industry] = competitors
 
     base_url = "https://www.google.com/search?q=top+"
@@ -75,7 +75,7 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
                 competitor = competitor.replace("nyse:", "")
                 company_symbol = find_company_symbol(competitor)
                 f.write(f"{competitor}: {company_symbol} \n")
-                competitors.append(company_symbol)
+                competitors.append((competitor, company_symbol))
             industry_companies[industry] = competitors
 
     return industry_companies
