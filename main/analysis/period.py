@@ -19,26 +19,35 @@ class Period:
         self.revenue_growth = revenue_growth
         self.eps_trends = eps_trends
 
-    def current_to_average_earnings_estimate(self):
-        current_eps = self.eps_trends.get("current")
-        if current_eps:
-            percent_diff_from_earnings_estimate = percentage_difference(
-                self.earnings_estimate_avg,
-                current_eps
-            )
+    def year_ago_rev_to_estimate(self):
+        change_in_two_year_rev = percentage_difference(
+            self.rev_year_ago, self.revenue_estimate_avg)
 
-    def eps_year_ago_to_current(self):
-        current_eps = self.eps_trends.get("current")
-        if current_eps:
-            percent_diff_prev_year_eps = percentage_difference(
-                current_eps,
-                self.eps_year_ago
-            )
+    def eps_trend_change(self):
+        trend_vals = list(self.eps_trends.values())
+        trend_vals = [val for val in trend_vals if not isinstance(val, dict)]
+        if trend_vals:
+            change_in_eps_by_days = percentage_change(
+                list(self.eps_trends.values()))
 
-    def increase_in_eps_trends(self):
-        eps_change_perc = percentage_change(self.eps_trends.values())
+    def year_ago_eps_to_now(self):
+        if self.eps_trends.get("current") and self.eps_year_ago:
+            eps_year_diff = percentage_difference(
+                self.eps_year_ago, self.eps_trends.get("current"))
+
+    def year_ago_eps_to_estimate(self):
+        if self.eps_year_ago and self.earnings_estimate_avg:
+            two_year_eps = percentage_difference(
+                self.eps_year_ago, self.earnings_estimate_avg)
+
+    def current_eps_to_estimate(self):
+        if self.eps_trends.get("current") and self.earnings_estimate_avg:
+            current_to_estimate = percentage_difference(
+                self.eps_trends.get("current"), self.earnings_estimate_avg)
 
     def __gt__(self, other):
+        if not self.period_year and not self.period_month and not self.period_day:
+            return False
         if not other.period_year and not other.period_month and not other.period_day:
             return True
         d1 = datetime.datetime(self.period_year,

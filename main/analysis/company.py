@@ -37,9 +37,11 @@ class Company:
         self.competitors = scrape_competitors(self.name, self.symbol,
                                               self.sector, self.industry_disp,
                                               self.desc)
+        print(self.competitors)
 
     def get_latest_headlines(self):
         self.headlines = scrape_headlines(self.name)
+        print(self.headlines)
 
     def get_summary(self):
         response = api_get_summary(self.symbol)
@@ -270,6 +272,17 @@ class Company:
                                   rev_year_ago,
                                   revenue_growth])
 
+        earnings_history = response.get("earningsHistory").get("history")
+        history_of_eps_estimates = []
+
+        for earning in earnings_history:
+            history_of_eps_estimates.append([get_value_from_object(earning, "epsActual", "raw"),
+                                             get_value_from_object(
+                                                 earning, "epsEstimate", "raw"),
+                                             get_value_from_object(earning, "surprisePercent", "raw")])
+
+        history_of_eps_estimates.reverse()
+
     def get_balance_sheet(self):
         response = api_get_balance_sheet(self.symbol)
         cash_flow_history = response.get("cashflowStatementHistory")
@@ -494,58 +507,30 @@ class Company:
         for insider_holder in transactions.values():
             insider_holder.analyze_transactions()
 
+        insider_holders = [
+            insider_holder for insider_holder in transactions.values()]
+        insider_holders.sort(key=lambda insider: insider.transaction_count)
+
     def analyze_averages(self):
         diff_200_day = percentage_difference(
-            self.current_price, self.delta_200)
-        diff_50_day = percentage_difference(self.current_price, self.delta_50)
+            self.current_price, self.two_hundred_day_average)
+        diff_50_day = percentage_difference(
+            self.current_price, self.fifty_day_average)
 
-        if diff_200_day > 0:
-            longterm_trend = "bullish"
-        else:
-            longterm_trend = "bearish"
-
-        if diff_50_day > 0:
-            shortterm_trend = "bullish"
-        else:
-            shortterm_trend = "bearish"
-
-        self.based_on_avg = f"longterm {longterm_trend}, shortterm {shortterm_trend}"
-
-        if abs(self.fifty_two_week_high - self.current_price) < abs(self.fifty_two_week_low - self.current_price):
-            self.closer_to = "high"
-        else:
-            self.closer_to = "low"
+        fifty_two_week_high_diff = percentage_difference(
+            self.current_price, self.fifty_two_week_high)
+        fifty_two_week_low_diff = percentage_difference(
+            self.current_price, self.fifty_two_week_low)
 
     def analyze_epoch(self):
 
         epoch_grades = [EpochGrade(grade[1], grade[0], grade[3], grade[2])
                         for grade in self.grade_history]
 
-        epoch_grades.sort()
+        epoch_grades.sort(reverse=True)
 
-        grade_categories = {}
-
-        for epoch_grade in epoch_grades:
-            current_grade = epoch_grade.to_grade
-            grade_group = grade_categories.get(current_grade)
-            if grade_group:
-                grade_group.append(epoch_grade)
-            else:
-                grade_categories[current_grade] = [epoch_grade]
-
-        for epoch_grade, epoch_group in grade_categories.items():
-            from_grade_groups = {}
-            for epoch in epoch_group:
-                from_grade = from_grade_groups.get(epoch.from_grade)
-                if from_grade:
-                    from_grade.append(epoch)
-                else:
-                    if not epoch.from_grade:
-                        from_grade_groups["No Grade"] = [epoch]
-                    else:
-                        from_grade_groups[epoch.from_grade] = [epoch]
-
-            grade_categories[epoch_grade] = from_grade_groups
+        for epoch in epoch_grades:
+            print(epoch)
 
     def analyze_earnings(self):
 
@@ -554,11 +539,17 @@ class Company:
                           period[5], period[6],
                           period[7], period[4]) for period in self.earnings]
 
-        periods.sort()
+        periods.sort(reverse=True)
+
+        for period in periods:
+            period.current_eps_to_estimate()
+            period.eps_trend_change()
+            period.year_ago_eps_to_estimate()
+            period.year_ago_eps_to_now()
 
     def analyze_cash_flow(self):
-        self.cash_flows.sort()
-        self.delta_investments = percentage_difference(
+        self.cash_flows.sort(reverse=True)
+        self.delta_investments = percentage_change(
             [flow.investments for flow in self.cash_flows if flow.investments])
         self.delta_delta_liabilities = percentage_change(
             [flow.change_to_liabilities for flow in self.cash_flows if flow.change_to_liabilities])
@@ -580,7 +571,7 @@ class Company:
             flow.capital_expenditures for flow in self.cash_flows if flow.capital_expenditures])
 
     def analyze_balance_sheet_statements(self):
-        self.statements.sort()
+        self.statements.sort(reverse=True)
         self.delta_intangible_assets = percentage_change([
             sheet.intangible_assets for sheet in self.statements if sheet.intangible_assets])
         self.delta_total_liab = percentage_change([
@@ -611,7 +602,7 @@ class Company:
             sheet.long_term_debt for sheet in self.statements if sheet.long_term_debt])
 
     def analyze_income_statements(self):
-        self.income_statements.sort()
+        self.income_statements.sort(reverse=True)
 
         self.delta_r_and_d = percentage_change([
             state.r_and_d for state in self.income_statements if state.r_and_d])

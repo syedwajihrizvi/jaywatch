@@ -23,7 +23,7 @@ def get_value_from_object(object, key, type):
 
 
 def percentage_difference(x, y):
-    return ((x-y)/y)*100
+    return ((x-y)/abs(y))*100
 
 
 def percentage_change(a1):

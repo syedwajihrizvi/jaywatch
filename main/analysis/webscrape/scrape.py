@@ -1,3 +1,5 @@
+import json
+import codecs
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -5,6 +7,8 @@ from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 
 from ..chatgpt.bot import ask_industry, classify_headlines, get_ticker_symbol
+
+import string
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-blink-features')
@@ -16,16 +20,22 @@ service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(
     service=service, options=options)
 
+companies = json.load(codecs.open(
+    "main/analysis/webscrape/company_symbols.json", 'r', 'utf-8-sig'))
+list_of_companies = companies.keys()
+
 
 def get_competitors(name, symbol, api_sector, api_disp, desc):
+    f = open(f"{name}-competitors.txt", "w")
+
     # Ask Chat GPT to get the specific sector from the company desc
     smart_industries = ask_industry(name, desc)
     industry_companies = {}
 
     # Google search on that sector and collect company names
     base_url = "https://www.google.com/search?q=top+consumer+"
-    res = []
     for industry in smart_industries:
+        f.write(f"Industry: {industry}\n")
         competitors = []
         url = base_url + \
             industry.lower().replace("industry", "").replace(" ", "+")+"+companies"
@@ -40,12 +50,16 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
             useless_part = competitor.find("ceo")
             competitor = competitor[:useless_part] if useless_part > - \
                 1 else competitor
-            competitors.append(competitor)
+            competitor = competitor.replace("nyse:", "")
+            company_symbol = find_company_symbol(competitor)
+            f.write(f"{competitor}: {company_symbol} \n")
+            competitors.append(company_symbol)
         industry_companies[industry] = competitors
 
     base_url = "https://www.google.com/search?q=top+"
     for industry in smart_industries:
         if len(industry_companies[industry]) == 0:
+            f.write(f"Industry: {industry}\n")
             url = base_url + \
                 industry.lower().replace("industry", "").replace(" ", "+")+"+companies"
             driver.get(url)
@@ -58,13 +72,13 @@ def get_competitors(name, symbol, api_sector, api_disp, desc):
                 useless_part = competitor.find("ceo")
                 competitor = competitor[:useless_part] if useless_part > - \
                     1 else competitor
-                competitors.append(competitor)
+                competitor = competitor.replace("nyse:", "")
+                company_symbol = find_company_symbol(competitor)
+                f.write(f"{competitor}: {company_symbol} \n")
+                competitors.append(company_symbol)
             industry_companies[industry] = competitors
 
-    for industry, competitors in industry_companies.items():
-        res.append({industry: competitors})
-
-    return res
+    return industry_companies
 
 
 def get_latest_headlines(name):
@@ -121,3 +135,20 @@ def get_fund_ticker_symbol(name):
     else:
         fund_name = get_ticker_symbol(name)
         return fund_name.replace(" ", "")
+
+
+def find_company_symbol(company):
+    mapping_table = str.maketrans('', '', string.punctuation)
+    for company_listed in list_of_companies:
+        format_listed = company_listed.lower()
+        extracted_listed = format_listed.translate(mapping_table)
+
+        format_company = company.lower()
+        extracted_company = format_company.translate(mapping_table)
+
+        if company.lower() == companies[company_listed].lower():
+            return companies[company_listed]
+        if extracted_company == extracted_listed or extracted_company in extracted_listed or extracted_listed in extracted_company:
+            return companies[company_listed]
+
+    return "NOT_FOUND"

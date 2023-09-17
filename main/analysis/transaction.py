@@ -39,4 +39,4 @@ class Transaction:
         return d1 > d2
 
     def __str__(self):
-        return f"{self.trans_type}, {self.value}, {self.shares}, {self.date}"
+        return f"{self.trans_type}, {self.value}, {self.shares}, {self.transaction_month}"
